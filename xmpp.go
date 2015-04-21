@@ -510,7 +510,8 @@ func (c *Client) IsEncrypted() bool {
 
 // Chat is an incoming or outgoing XMPP chat message.
 type Chat struct {
-	Remote string
+	To     string
+	From   string
 	Type   string
 	Text   string
 	Roster Roster
@@ -543,7 +544,7 @@ func (c *Client) Recv() (stanza interface{}, err error) {
 		}
 		switch v := val.(type) {
 		case *clientMessage:
-			return Chat{Remote: v.From, Type: v.Type, Text: v.Body, Other: v.Other}, nil
+			return Chat{From: v.From, To: v.To, Type: v.Type, Text: v.Body, Other: v.Other}, nil
 		case *clientQuery:
 			var r Roster
 			for _, item := range v.Item {
@@ -559,8 +560,8 @@ func (c *Client) Recv() (stanza interface{}, err error) {
 
 // Send sends the message wrapped inside an XMPP message stanza body.
 func (c *Client) Send(chat Chat) (n int, err error) {
-	return fmt.Fprintf(c.conn, "<message to='%s' type='%s' xml:lang='en'>"+"<body>%s</body></message>",
-		xmlEscape(chat.Remote), xmlEscape(chat.Type), xmlEscape(chat.Text))
+	return fmt.Fprintf(c.conn, "<message to='%s' from='%s' type='%s' xml:lang='en'><body>%s</body></message>",
+		xmlEscape(chat.To), xmlEscape(chat.From), xmlEscape(chat.Type), xmlEscape(chat.Text))
 }
 
 // SendOrg sends the original text without being wrapped in an XMPP message stanza.
@@ -570,10 +571,10 @@ func (c *Client) SendOrg(org string) (n int, err error) {
 
 // SendHtml sends the message as HTML as defined by XEP-0071
 func (c *Client) SendHtml(chat Chat) (n int, err error) {
-	return fmt.Fprintf(c.conn, "<message to='%s' type='%s' xml:lang='en'>"+
+	return fmt.Fprintf(c.conn, "<message to='%s' from='%s' type='%s' xml:lang='en'>"+
 		"<body>%s</body>"+
 		"<html xmlns='http://jabber.org/protocol/xhtml-im'><body xmlns='http://www.w3.org/1999/xhtml'>%s</body></html></message>",
-		xmlEscape(chat.Remote), xmlEscape(chat.Type), xmlEscape(chat.Text), chat.Text)
+		xmlEscape(chat.To), xmlEscape(chat.From), xmlEscape(chat.Type), xmlEscape(chat.Text), chat.Text)
 }
 
 // Roster asks for the chat roster.
